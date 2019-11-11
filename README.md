@@ -2,6 +2,9 @@
 This repo contains everything needed to build, test, and deploy a lambda that receives RDS events via
 SNS and posts state change messages to Slack.
 
+Example Slack message:
+![RDS Events Slack Message](images/rds-events-slack-message.png)
+
 ## RDS Events Lambda Architecture
 The architecture utilizes the built-in RDS events that are delivered to SNS.  A Lambda then subscribes to the RdsEventsTopic SNS topic and delivers state change notifications to Slack via a Slack Webhook.  While the architecture may seem very simple, it is serverless and can easily support many databases without the need to scale or manage any infrastructure on AWS.  Additionally, it is extremely cost-effective, as AWS provides 1,000,000 free invocations per month.  
 
