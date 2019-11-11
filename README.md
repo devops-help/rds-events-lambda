@@ -50,8 +50,8 @@ To install rds-events-lambda simply run the deploy script from the root of this 
 ```
 **REPLACE:**  
 ```dev``` with the name of the Environment (dev, test, staging, prod, etc.) you wish to deploy the lambda for  
- ```devops-bucket``` with the bucket name for the deployment artifacts
- ```db-instance-1``` with the DB identifier of the RDS instance you wish to monitor events for
+ ```devops-bucket``` with the bucket name for the deployment artifacts  
+ ```db-instance-1``` with the DB identifier of the RDS instance you wish to monitor events for  
  ```slack-webhook-url``` with the Slack Webhook URL to post messages to 
 
 ## Cleanup (Stack Deletion)
