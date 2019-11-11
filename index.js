@@ -14,7 +14,7 @@ const slackWebhookUrl = process.env.SLACK_WEBHOOK_URL;
 /**
  * This Lambda function recieves RDS events and forwards state change and warnings to Slack.
  *
- * @param {Object} event - The RDS event .
+ * @param {Object} event - The SNS event holding data on the RDS event.
  */
 exports.handler = async (event) => {
 
@@ -29,11 +29,14 @@ exports.handler = async (event) => {
  * Process each RDS event and post to the Slack webhook if the RDS event is a state change or warning.
  *
  * @param {Object} event The SNS event object.
+ * @returns {Promise} A Promise that when fulfilled will hold the response from the Slack webhook.
  */
 function processEvent(event) {
 
 	let eventRecords = event.Records;
 	for (let record of eventRecords) {
+
+		let timestamp = record.Sns.Timestamp;
 
 		let message = JSON.parse(record.Sns.Message);
 		let dbIdentifier = message['Source ID'];
@@ -43,14 +46,24 @@ function processEvent(event) {
 		let hashIndex = eventId.lastIndexOf('#');
 		let rdsEventId = (hashIndex > 0 ? eventId.substring(hashIndex + 1) : null);
 
-		return (sendSlackMessage(slackWebhookUrl, dbIdentifier, eventMessage, rdsEventId));
+		return (sendSlackMessage(slackWebhookUrl, { timestamp, dbIdentifier, eventMessage, rdsEventId }));
 	}	
 }
 
-async function sendSlackMessage(webhookUrl, dbIdentifier, eventMessage, rdsEventId) {
+/**
+ * Formats and posts the RDS event to the specified Slack webhook URL.
+ *
+ * @param {String} webhookUrl The Slack incoming webhook URL.
+ * @param {Object} data The parsed RDS event data.
+ * @returns {Promise} A Promise that when fulfilled will hold the response from the Slack webhook.
+ */
+async function sendSlackMessage(webhookUrl, data) {
 
+	let message = `*Timestamp:* ${data.timestamp}\n` +
+		`*DB Identifier:* ${data.dbIdentifier}\n` +
+		`*Notification:* ${data.eventMessage} (${data.rdsEventId})`;
 	let messageBody = {
-		text: `*DB Identifier:* ${dbIdentifier}\n*Notification:* ${eventMessage} (${rdsEventId})`,
+		text: message,
 		mrkdwn: true
 	};
 
