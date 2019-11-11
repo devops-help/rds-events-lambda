@@ -1,0 +1,92 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Deploys a lambda that subscribes to the RdsEventsTopic SNS topic and
+  posts RDS state change notifications to Slack.
+Parameters:
+  Environment:
+    Type: String
+    Description: Value for the ENV environment variable.
+    AllowedPattern: '[A-Za-z][A-Za-z0-9]+'
+    Default: dev
+  DbIdentifier:
+    Type: String
+    Description: The DB Identifier for the source of the RDS events
+  SlackWebhookUrl:
+    Type: String
+    Description: The URL of the Slack webhook to post the RDS events to
+    AllowedPattern: 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+
+Resources:
+  RdsEventsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Lambda function subscribed to the RdsEventsTopic SNS topic.
+      FunctionName: !Sub 'RdsEventsFunction-${Environment}'
+      Handler: index.handler
+      CodeUri: .
+      Runtime: nodejs10.x
+      AutoPublishAlias: live
+      Environment: 
+        Variables:
+          ENV: !Ref Environment
+          LOG_DEBUG: false
+          SLACK_WEBHOOK_URL: !Ref SlackWebhookUrl
+
+  RdsEventsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Sub 'rds-events-topic'
+      TopicName: !Sub 'rds-events-topic'
+      Subscription:
+        - Protocol: lambda
+          Endpoint: !GetAtt RdsEventsFunction.Arn
+
+  RdsEventsFunctionInvokePermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref RdsEventsFunction
+      Principal: sns.amazonaws.com   
+
+  RdsEventsTopicPolicy:
+    Type: 'AWS::SNS::TopicPolicy'
+    Properties:
+      Topics:
+        - !Ref RdsEventsTopic
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: 'sns:Publish'
+            Resource: !Ref RdsEventsTopic
+            Principal:
+              AWS: '*'
+            Condition:
+              ArnLike:
+                AWS:SourceArn: !Sub 'arn:aws:rds:*:${AWS::AccountId}:*'
+
+  RdsEventSubscription:
+    Type: AWS::RDS::EventSubscription
+    Properties:
+      SourceType: db-instance
+      Enabled: true
+      EventCategories: 
+        - availability
+        - failure
+        - low storage
+        - notification
+      SnsTopicArn: !Ref RdsEventsTopic
+      SourceIds: 
+        - !Sub '${DbIdentifier}'
+
+Outputs:
+  RdsEventsTopic:
+    Description: "RdsEvents SNS Topic ARN"
+    Value: !GetAtt RdsEventsTopic.TopicName
+  RdsEventsFunction:
+    Description: "RdsEvents Lambda Function ARN"
+    Value: !GetAtt RdsEventsFunction.Arn
+  RdsEventsFunctionIamRole:
+    Description: "Implicit IAM Role created for RdsEventsFunction"
+    Value: !GetAtt RdsEventsFunctionRole.Arn
