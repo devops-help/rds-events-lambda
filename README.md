@@ -1,9 +1,12 @@
 # rds-events-lambda
+
 This repo contains everything needed to build, test, and deploy a lambda that receives RDS events via
 SNS and posts state change messages to Slack.
 
 Example Slack message:  
 ![RDS Events Slack Message](images/rds-events-slack-message.png)
+
+---
 
 For more information on RDS Events see [Amazon RDS Event Categories and Event Messages](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_Events.html#USER_Events.Messages).
 
