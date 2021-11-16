@@ -61,7 +61,7 @@
     "lambda-log": "^2.3.1"
   },
   "devDependencies": {
-    "aws-sdk": "^2.568.0",
+    "aws-sdk": "^2.814.0",
     "chai": "^4.2.0",
     "chai-http": "^4.3.0",
     "cross-var-no-babel": "^1.2.0",
